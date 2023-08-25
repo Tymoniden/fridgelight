@@ -1,12 +1,12 @@
 ﻿@page "/fetchdata"
-@using Fridgelight.Shared
-@inject HttpClient Http
+@using Fridgelight.Data
+@inject WeatherForecastService ForecastService
 
 <PageTitle>Weather forecast</PageTitle>
 
 <h1>Weather forecast</h1>
 
-<p>This component demonstrates fetching data from the server.</p>
+<p>This component demonstrates fetching data from a service.</p>
 
 @if (forecasts == null)
 {
@@ -42,6 +42,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        forecasts = await ForecastService.GetForecastAsync(DateOnly.FromDateTime(DateTime.Now));
     }
 }
