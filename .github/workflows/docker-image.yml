@@ -1,4 +1,4 @@
-name: Docker Build And Push To Docker Hub
+name: Build and push to docker hub
 
 on:
   push:
@@ -6,22 +6,25 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build Docker Image
+  push_to_registries:
+    name: Push Docker image to multiple registries
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
-      - name: Checkout
+      - name: Check out the repo
         uses: actions/checkout@v3
-
-      - name: Build Docker Image
-        id: buildAndPushImage
-        uses: MaximilianoBz/dockerhub-buildpush@v1.0
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
         with:
-          registry_url: 'docker.io'
-          repository_name: 'tymoniden/fridgelight'
-          user_name: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESSTOKEN }}
-          image_version: 'v1.0'
-          docker_file: '.'
-      - name: Get pre step result output image_pull_url
-        run: echo "The time was ${{ steps.buildAndPushImage.outputs.image_pull_url }}"
+      
+      - name: Build and push Docker images
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          push: true
+          tags: tymoniden/fridgelight:latest
