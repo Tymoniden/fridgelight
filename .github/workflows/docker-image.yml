@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build Spring Boot
+    name: Build Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,7 +18,7 @@ jobs:
         uses: MaximilianoBz/dockerhub-buildpush@v1.0
         with:
           registry_url: 'docker.io'
-          repository_name: 'fridgelight'
+          repository_name: 'tymoniden/fridgelight'
           user_name: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESSTOKEN }}
           image_version: 'v1.0'
