@@ -1,0 +1,87 @@
+﻿@page "/"
+@using FridgeLight.UploadProduce.Services
+@inject Services.IProduceRepository ProduceRepository
+
+<PageTitle>Upload</PageTitle>
+
+<h1>Upload Files</h1>
+
+<p>
+    <label>Title: <InputText @bind-Value="_title" /></label>
+    
+    <label>Rating: 
+        <InputSelect @bind-Value="@_rating" >
+          
+            @foreach (var ratingValue in Enum.GetValues(typeof(Rating)))
+            {
+
+                <option value="@ratingValue">@ratingValue</option>
+            }
+        </InputSelect>
+
+    </label>
+
+    <label>
+        Upload up to @MaxAllowedFiles files:
+        <InputFile OnChange="@OnInputFileChange" multiple/>
+    </label>
+    
+    <label><button @onclick="Save">Save</button></label>
+
+</p>
+
+@if (_saving)
+{
+<div class="d-flex flex-row">
+    <div class="p-2">saving ...</div>
+</div>
+}
+
+
+@code {
+    private const int MaxAllowedFiles = 3;
+
+    private readonly List<IBrowserFile> _files = new();
+    private string _title = string.Empty;
+    private Rating _rating;
+    private bool _saving;
+    
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        _files.Clear();
+        foreach (var file in e.GetMultipleFiles(MaxAllowedFiles))
+        {
+            // check for mimetypes
+            _files.Add(file);
+        }
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        var produce = ProduceRepository.CreateProduce();
+        produce.Title = _title;
+        produce.Ratings.Add(_rating);
+        var index = 0;
+
+        foreach (var file in _files)
+        {
+            try
+            {
+                var fileContent = new StreamContent(file.OpenReadStream());
+                var extension = file.Name[file.Name.LastIndexOf(".", StringComparison.Ordinal)..];
+
+                var filename = await ProduceRepository.SavePicture(await fileContent.ReadAsStreamAsync(), $"_{index++}{extension}", produce);
+                produce.Images.Add(filename);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+                break;
+            }
+        }
+
+        await ProduceRepository.SaveProduce(produce);
+        _saving = false;
+    }
+}

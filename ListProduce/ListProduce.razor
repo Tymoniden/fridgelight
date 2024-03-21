@@ -1,0 +1,122 @@
+﻿@page "/Produce"
+@using FridgeLight.UploadProduce.Services
+
+@inject IProduceRepository ProduceRepository
+
+<PageTitle>Produce</PageTitle>
+<h3>ListProduce</h3>
+
+@if (_selectedProduce != null)
+{
+    <div class="d-flex flex-column">
+        <div class="p-2">Name : <InputText @bind-Value="@_selectedProduce.Title" /> </div>
+        <div class="p-2">Rating:
+            <InputSelect @bind-Value="@_rating" @onfocusout="Update">
+                @foreach (var ratingValue in Enum.GetValues(typeof(Rating)))
+                {
+                    <option value="@ratingValue">@ratingValue</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+    <div class="d-flex flex-row">
+        @foreach (var image in _selectedProduce.Images)
+        {
+            <div class="p-2">
+                <img src="data:image/png;base64, @ProduceRepository.GetBase64Content(image)" alt="image" style="max-height: 300px; max-width: 300px;"/>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex flex-row">
+        <button @onclick="DeleteProduce">Delete</button>
+        <button @onclick="Update">Save</button>
+    </div>
+
+    if (_saving)
+    {
+        <div class="d-flex flex-row">
+            <div class="p-2">saving ...</div>
+        </div>
+    }
+}
+
+<div class="table-responsive">
+    <table class="table table-hover ">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Rating</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @foreach (var produce in _produces)
+            {
+                <tr class="@(_selectedProduce?.Guid.Equals(produce.Guid) == true ? "table-info" : string.Empty)" @onclick="() => SelectProduce(produce)">
+                    <td>@produce.Title</td>
+                    <td>@produce.Ratings.FirstOrDefault()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@code {
+    
+    private readonly List<Produce> _produces = new();
+    private Produce? _selectedProduce;
+    private Rating _rating;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateList();
+    }
+
+    private async Task UpdateList()
+    {
+        _produces.Clear();
+        _produces.AddRange(await ProduceRepository.ReadAllProduces());
+    }
+
+    private void SelectProduce(Produce produce)
+    {
+        _selectedProduce = produce; 
+        _rating = produce.Ratings.Any() ? produce.Ratings.First() : Rating.WontBuyAgain;
+    }
+
+    private async Task Update()
+    {
+        if (_selectedProduce == null)
+        {
+            return;
+        }
+
+        if (!_selectedProduce.Ratings.Any())
+        {
+            _selectedProduce.Ratings.Add(_rating);
+        }
+        else
+        {
+            _selectedProduce.Ratings[0] = _rating;
+        }
+
+        _saving = true;
+        await ProduceRepository.SaveProduce(_selectedProduce);
+        _saving = false;
+    }
+
+    private async Task DeleteProduce()
+    {
+        if (_selectedProduce == null)
+        {
+            return;
+        }
+
+        ProduceRepository.DeleteProduce(_selectedProduce);
+        _selectedProduce = null;
+        await UpdateList();
+    }
+
+}
